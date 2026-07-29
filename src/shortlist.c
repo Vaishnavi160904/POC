@@ -1,0 +1,38 @@
+#include "shortlist.h"
+
+/* Assumes candidates[] is already sorted (RankCandidates/SortCandidates ran first) */
+int SelectTopCandidates(int topN)
+{
+    int selected = 0;
+    for (int i = 0; i < candidateCount; i++) {
+        if (i < topN) {
+            candidates[i].shortlisted = 1;
+            selected++;
+        } else {
+            candidates[i].shortlisted = 0;
+        }
+    }
+    printf("[shortlist] SelectTopCandidates: %d of %d candidate(s) shortlisted\n", selected, candidateCount);
+    return selected;
+}
+
+int GenerateShortlist(void)
+{
+    FILE *fp = fopen("output/shortlisted/Top10Candidates.txt", "w");
+    int count = 0;
+
+    printf("\n[shortlist] Shortlisted Candidates:\n");
+    for (int i = 0; i < candidateCount; i++) {
+        if (candidates[i].shortlisted) {
+            count++;
+            printf("  %d. %s (Score: %d/100)\n", count, candidates[i].name, candidates[i].finalScore);
+            if (fp) fprintf(fp, "%d. %s - Score: %d/100 - %s\n",
+                             count, candidates[i].name, candidates[i].finalScore, candidates[i].filename);
+        }
+    }
+    if (fp) {
+        fclose(fp);
+        printf("[shortlist] Written to output/shortlisted/Top10Candidates.txt\n");
+    }
+    return count;
+}

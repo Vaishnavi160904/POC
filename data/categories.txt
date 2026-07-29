@@ -1,0 +1,27 @@
+Programming Languages
+Python
+Java
+C
+
+Frontend
+React
+HTML
+CSS
+
+Backend
+NodeJS
+ExpressJS
+FastAPI
+
+Database
+MongoDB
+MySQL
+
+Cloud
+AWS
+Azure
+
+Tools
+Git
+Docker
+Linux

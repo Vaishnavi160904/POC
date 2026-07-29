@@ -1,0 +1,30 @@
+C
+C++
+Java
+Python
+JavaScript
+SQL
+MySQL
+PostgreSQL
+MongoDB
+HTML
+CSS
+React
+Node.js
+FastAPI
+Spring Boot
+Git
+GitHub
+VS Code
+Postman
+Selenium
+PyTest
+Unit Testing
+Arrays
+Trees
+Graphs
+Agile
+Scrum
+Linux
+Windows
+Communication

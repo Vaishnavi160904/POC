@@ -1,0 +1,55 @@
+C
+C++
+Java
+Python
+JavaScript
+SQL
+MySQL
+PostgreSQL
+MongoDB
+HTML
+CSS
+React
+Node.js
+Express.js
+FastAPI
+Spring Boot
+Django
+Flutter
+TensorFlow
+Scikit-learn
+OpenCV
+NumPy
+Pandas
+TailwindCSS
+Material UI
+Redux
+Redux Toolkit
+Firebase
+Git
+GitHub
+VS Code
+Postman
+Figma
+PyCharm
+Android Studio
+pgAdmin
+PowerBI
+Cisco Packet Tracer
+Selenium
+PyTest
+Unit Testing
+Arrays
+Linked List
+Trees
+Graphs
+Hash Table
+Agile
+Scrum
+Linux
+Windows
+Docker
+AWS
+Communication
+Teamwork
+Problem Solving
