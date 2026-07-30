@@ -3,10 +3,14 @@
  * ---------------------------------------------------------------
  * Menu-driven console application.
  *
- *   Main Menu:      1. Login   2. Signup   3. Exit
- *   After Login:    Upload requirement, bulk upload resumes, process them,
- *                    view ranking, shortlist, search, reports, dashboard,
- *                    change password, logout, exit.
+ *   Main Menu:   1. Login   2. Signup   3. Exit
+ *
+ * Per-resume processing pipeline (matches the documented process flow):
+ *   HR Login -> Upload Job Requirement -> Upload Candidate Resumes ->
+ *   Resume Text Extraction -> Text Cleaning -> Tokenization ->
+ *   Stop Word Removal -> Top Word Frequency Analysis -> Skill
+ *   Categorization -> Skill Matching -> Candidate Score Calculation ->
+ *   Candidate Ranking -> Shortlisting -> Report Generation.
  */
 
 #include <stdio.h>
@@ -39,6 +43,8 @@
 static void ReadLine(char *buf, int size)
 {
     if (fgets(buf, size, stdin) == NULL) {
+        /* EOF or a read error (e.g. stdin piped/redirected and exhausted) -
+         * fail safe with an empty string instead of leaving buf uninitialized. */
         buf[0] = '\0';
         return;
     }
@@ -64,7 +70,7 @@ static void PressEnterToContinue(void)
 }
 
 /* ------------------------------------------------------------------ */
-/* Resume processing pipeline (unchanged logic, now menu-triggered)    */
+/* Resume processing pipeline (per-resume steps, diagram-ordered)      */
 /* ------------------------------------------------------------------ */
 
 static void ProcessResume(const char *filepath)
@@ -73,6 +79,7 @@ static void ProcessResume(const char *filepath)
     printf(" Processing: %s\n", filepath);
     printf("---------------------------------------------------------\n");
 
+    /* --- Resume Text Extraction --- */
     char *rawText = ReadResume(filepath);
     if (!rawText) {
         printf("[main] Skipping '%s' (unreadable)\n", filepath);
@@ -98,27 +105,41 @@ static void ProcessResume(const char *filepath)
     ExtractEducation(rawText);
     ExtractExperience(rawText);
 
+    /* --- Text Cleaning --- */
     char *workText = (char *)malloc(strlen(rawText) + 1);
+    if (!workText) {
+        printf("[main] Out of memory while processing '%s' - skipping\n", filepath);
+        free(rawText);
+        return;
+    }
     strcpy(workText, rawText);
     CleanText(workText);
     NormalizeWords(workText);
 
+    /* --- Tokenization --- */
     static char tokens[MAX_TOKENS][MAX_TOKEN_LEN];
     int tokenCount = Tokenize(workText, tokens, MAX_TOKENS);
     c->totalWords = tokenCount;
+
+    /* --- Stop Word Removal --- */
     tokenCount = RemoveStopWords(tokens, tokenCount);
 
+    /* --- Top Word Frequency Analysis --- */
     CountWordFrequency(tokens, tokenCount);
     FindTopKeywords(10);
     KeywordDensity("python", c->totalWords);
-    CategorizeKeywords();
-    DomainDetection();
     ResumeStatistics();
 
+    /* --- Skill Categorization --- */
+    CategorizeKeywords();
+    DomainDetection();
+
+    /* --- Skill Matching --- */
     MatchSkills();
     MissingSkills();
     CalculateMatchPercentage(c->matchedSkillCount, jobSkillCount);
 
+    /* --- Candidate Score Calculation --- */
     CalculateSkillScore();
     CalculateExperienceScore();
     CalculateEducationScore();
@@ -142,39 +163,121 @@ static void ResetProcessingState(void)
 }
 
 /* ------------------------------------------------------------------ */
-/* HR feature menu actions                                            */
+/* Job requirement submenu                                            */
 /* ------------------------------------------------------------------ */
 
-static void MenuUploadRequirement(void)
+static void MenuRequirement(void)
 {
-    char path[MAX_PATH_LEN];
-    printf("\nEnter job requirement file path (.txt or .pdf)\n");
-    printf("[Enter for default: data/job_requirement.pdf]: ");
-    ReadLine(path, sizeof(path));
-    if (strlen(path) == 0) strcpy(path, "data/job_requirement.pdf");
+    printf("\n--- Job Requirement ---\n");
+    printf(" 1. Upload/Load Requirement File (.txt or .pdf)\n");
+    printf(" 2. View Current Requirement\n");
+    printf(" 3. Add a Skill\n");
+    printf(" 4. Remove a Skill\n");
+    printf(" 5. Delete Requirement File\n");
+    printf(" 6. Reload Requirement from Disk\n");
+    printf("Enter choice: ");
+    int choice = ReadIntChoice();
 
-    UploadJobRequirement(path);
+    char path[MAX_PATH_LEN];
+    char skill[MAX_WORD_LEN];
+
+    switch (choice) {
+        case 1:
+            printf("\nEnter job requirement file path (.txt or .pdf)\n");
+            printf("[Enter for default: data/job_requirement.pdf]: ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) strcpy(path, "data/job_requirement.pdf");
+            UploadJobRequirement(path);
+            break;
+        case 2:
+            if (jobSkillCount == 0) {
+                printf("\nNo requirement loaded yet. Use option 1 first.\n");
+                break;
+            }
+            printf("\nEnter the file path to re-read\n");
+            printf("[Enter for default: data/job_requirement.txt]: ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) strcpy(path, "data/job_requirement.txt");
+            ReadRequirement(path);
+            break;
+        case 3:
+            printf("Skill to add: ");
+            ReadLine(skill, sizeof(skill));
+            if (strlen(skill) == 0) {
+                printf("No skill entered.\n");
+                break;
+            }
+            AddSkillToRequirement(skill);
+            break;
+        case 4:
+            printf("Skill to remove: ");
+            ReadLine(skill, sizeof(skill));
+            if (strlen(skill) == 0) {
+                printf("No skill entered.\n");
+                break;
+            }
+            RemoveSkillFromRequirement(skill);
+            break;
+        case 5:
+            printf("File path to delete [Enter for default: data/job_requirement.txt]: ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) strcpy(path, "data/job_requirement.txt");
+            DeleteRequirement(path);
+            break;
+        case 6:
+            printf("File path to reload from [Enter for default: data/job_requirement.txt]: ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) strcpy(path, "data/job_requirement.txt");
+            EditRequirement(path);
+            break;
+        default:
+            printf("\nInvalid choice.\n");
+    }
 }
 
-static void MenuBulkUploadResumes(void)
-{
-    char path[MAX_PATH_LEN];
-    printf("\nEnter folder path containing resumes (.txt/.pdf)\n");
-    printf("[Enter for default: data/resumes]: ");
-    ReadLine(path, sizeof(path));
-    if (strlen(path) == 0) strcpy(path, "data/resumes");
+/* ------------------------------------------------------------------ */
+/* Resume upload submenu                                              */
+/* ------------------------------------------------------------------ */
 
-    BulkUpload(path);
+static void MenuUploadResumes(void)
+{
+    printf("\n--- Upload Resumes ---\n");
+    printf(" 1. Bulk Upload (scan a folder)\n");
+    printf(" 2. Upload a Single Resume\n");
+    printf("Enter choice: ");
+    int choice = ReadIntChoice();
+
+    char path[MAX_PATH_LEN];
+    switch (choice) {
+        case 1:
+            printf("\nEnter folder path containing resumes (.txt/.pdf)\n");
+            printf("[Enter for default: data/resumes]: ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) strcpy(path, "data/resumes");
+            BulkUpload(path);
+            break;
+        case 2:
+            printf("\nEnter path to a single resume file (.txt or .pdf): ");
+            ReadLine(path, sizeof(path));
+            if (strlen(path) == 0) {
+                printf("No path entered.\n");
+                break;
+            }
+            UploadResume(path);
+            break;
+        default:
+            printf("\nInvalid choice.\n");
+    }
 }
 
 static void MenuProcessResumes(void)
 {
     if (resumeFileCount == 0) {
-        printf("\nNo resumes uploaded yet. Use 'Bulk Upload Resumes' first.\n");
+        printf("\nNo resumes uploaded yet. Use 'Upload Resumes' first.\n");
         return;
     }
     if (jobSkillCount == 0) {
-        printf("\nNo job requirement loaded yet. Use 'Upload Job Requirement' first.\n");
+        printf("\nNo job requirement loaded yet. Use 'Job Requirement' first.\n");
         return;
     }
 
@@ -183,6 +286,7 @@ static void MenuProcessResumes(void)
     for (int i = 0; i < resumeFileCount; i++)
         ProcessResume(resumeFiles[i]);
 
+    /* --- Candidate Ranking (runs once, after every resume is processed) --- */
     if (candidateCount > 0) RankCandidates();
     printf("\n[main] Processed %d resume(s).\n", candidateCount);
 }
@@ -196,6 +300,7 @@ static void MenuViewRanking(void)
     RankCandidates();
 }
 
+/* --- Shortlisting --- */
 static void MenuShortlist(void)
 {
     if (candidateCount == 0) {
@@ -220,6 +325,8 @@ static void MenuSearch(void)
     printf(" 1. Search by Name\n");
     printf(" 2. Search by Skill\n");
     printf(" 3. Search by Minimum Experience\n");
+    printf(" 4. Search by Email\n");
+    printf(" 5. Filter by Degree\n");
     printf("Enter choice: ");
     int choice = ReadIntChoice();
 
@@ -242,21 +349,36 @@ static void MenuSearch(void)
             SearchByExperience(years);
             break;
         }
+        case 4:
+            printf("Email: ");
+            ReadLine(buf, sizeof(buf));
+            SearchByEmail(buf);
+            break;
+        case 5:
+            printf("Degree keyword (e.g. B.Tech, BCA): ");
+            ReadLine(buf, sizeof(buf));
+            FilterByDegree(buf);
+            break;
         default:
             printf("Invalid choice.\n");
     }
 }
 
+/* --- Report Generation --- */
 static void MenuReports(void)
 {
     if (candidateCount == 0) {
         printf("\nNo candidates processed yet.\n");
         return;
     }
-    GenerateCSV("output/reports/Candidate_Report.csv");
-    GenerateTXT("output/reports/Candidate_Report.txt");
-    ExportReport("output/reports/Full_Report.txt");
-    printf("\n[main] Reports written to output/reports/\n");
+    int csvRows = GenerateCSV("output/reports/Candidate_Report.csv");
+    int txtRows = GenerateTXT("output/reports/Candidate_Report.txt");
+    int summaryRows = ExportReport("output/reports/Full_Report.txt");
+
+    if (csvRows > 0 && txtRows > 0 && summaryRows > 0)
+        printf("\n[main] All reports written successfully to output/reports/\n");
+    else
+        printf("\n[main] One or more reports could not be written - see messages above.\n");
 }
 
 static void MenuDashboard(void)
@@ -286,13 +408,12 @@ static void MenuChangePassword(void)
 
 static void HRMenuLoop(void)
 {
-    int running = 1;
-    while (running) {
+    for (;;) {
         printf("\n=========================================================\n");
         printf(" HR Resume Screening System - Main Menu   (User: %s)\n", loggedInUser);
         printf("=========================================================\n");
-        printf("  1. Upload Job Requirement\n");
-        printf("  2. Bulk Upload Resumes\n");
+        printf("  1. Job Requirement (upload/view/add/remove/delete)\n");
+        printf("  2. Upload Resumes (bulk or single)\n");
         printf("  3. Process Uploaded Resumes\n");
         printf("  4. View Candidate Ranking\n");
         printf("  5. Shortlist Top Candidates\n");
@@ -307,8 +428,8 @@ static void HRMenuLoop(void)
 
         int choice = ReadIntChoice();
         switch (choice) {
-            case 1: MenuUploadRequirement(); break;
-            case 2: MenuBulkUploadResumes(); break;
+            case 1: MenuRequirement(); break;
+            case 2: MenuUploadResumes(); break;
             case 3: MenuProcessResumes(); break;
             case 4: MenuViewRanking(); break;
             case 5: MenuShortlist(); break;
@@ -319,8 +440,7 @@ static void HRMenuLoop(void)
             case 10:
                 Logout();
                 ResetProcessingState();
-                running = 0;
-                return;
+                return; /* back to the Login/Signup/Exit main menu */
             case 0:
                 Logout();
                 printf("\nGoodbye!\n");
@@ -367,14 +487,23 @@ static void DoSignup(void)
 
 int main(void)
 {
+    /* Make sure the output tree exists up front, regardless of what a
+     * fresh git clone or a manually-cleaned folder looks like - report
+     * generation should never silently fail just because a folder is missing. */
+    EnsureDirectoryExists("output");
+    EnsureDirectoryExists("output/reports");
+    EnsureDirectoryExists("output/shortlisted");
+    EnsureDirectoryExists("output/analysis");
+    EnsureDirectoryExists("output/logs");
+    EnsureDirectoryExists("output/extracted_text");
+
     /* Reference data (skill list, stopwords, categories) is not sensitive,
      * so it's loaded once at startup regardless of login state. */
     LoadTechnicalSkills("data/skills.txt");
     LoadStopWords("data/stopwords.txt");
     LoadCategories("data/categories.txt");
 
-    int running = 1;
-    while (running) {
+    for (;;) {
         printf("\n=========================================================\n");
         printf(" HR Resume Screening System - Top Word Frequency Analyzer\n");
         printf("=========================================================\n");
@@ -390,11 +519,9 @@ int main(void)
             case 2: DoSignup(); break;
             case 3:
                 printf("\nGoodbye!\n");
-                running = 0;
-                break;
+                return 0;
             default:
                 printf("\nInvalid choice, please try again.\n");
         }
     }
-    return 0;
 }

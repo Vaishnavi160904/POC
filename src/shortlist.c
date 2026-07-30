@@ -1,8 +1,14 @@
 #include "shortlist.h"
+#include "utils.h"
 
-/* Assumes candidates[] is already sorted (RankCandidates/SortCandidates ran first) */
+/* Assumes candidates[] is already sorted (RankCandidates() ran first) */
 int SelectTopCandidates(int topN)
 {
+    if (topN <= 0) {
+        printf("[shortlist] SelectTopCandidates: invalid count (%d), shortlisting 0 candidates\n", topN);
+        topN = 0;
+    }
+
     int selected = 0;
     for (int i = 0; i < candidateCount; i++) {
         if (i < topN) {
@@ -18,9 +24,17 @@ int SelectTopCandidates(int topN)
 
 int GenerateShortlist(void)
 {
-    FILE *fp = fopen("output/shortlisted/Top10Candidates.txt", "w");
-    int count = 0;
+    EnsureDirectoryExists("output");
+    EnsureDirectoryExists("output/shortlisted");
 
+    FILE *fp = fopen("output/shortlisted/Top10Candidates.txt", "w");
+    if (!fp) {
+        printf("[shortlist] GenerateShortlist warning: could not open "
+               "'output/shortlisted/Top10Candidates.txt' for writing "
+               "(printing results to console only)\n");
+    }
+
+    int count = 0;
     printf("\n[shortlist] Shortlisted Candidates:\n");
     for (int i = 0; i < candidateCount; i++) {
         if (candidates[i].shortlisted) {

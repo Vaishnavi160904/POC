@@ -1,7 +1,11 @@
 #include "report.h"
+#include "utils.h"
 
 int GenerateCSV(const char *outFile)
 {
+    EnsureDirectoryExists("output");
+    EnsureDirectoryExists("output/reports");
+
     FILE *fp = fopen(outFile, "w");
     if (!fp) {
         printf("[report] GenerateCSV failed: cannot open '%s'\n", outFile);
@@ -23,6 +27,9 @@ int GenerateCSV(const char *outFile)
 
 int GenerateTXT(const char *outFile)
 {
+    EnsureDirectoryExists("output");
+    EnsureDirectoryExists("output/reports");
+
     FILE *fp = fopen(outFile, "w");
     if (!fp) {
         printf("[report] GenerateTXT failed: cannot open '%s'\n", outFile);
@@ -57,9 +64,15 @@ int GenerateTXT(const char *outFile)
 
 int ExportReport(const char *outFile)
 {
+    EnsureDirectoryExists("output");
+    EnsureDirectoryExists("output/reports");
+
     /* A combined, single-file export: summary line per candidate */
     FILE *fp = fopen(outFile, "w");
-    if (!fp) return 0;
+    if (!fp) {
+        printf("[report] ExportReport failed: cannot open '%s'\n", outFile);
+        return 0;
+    }
 
     fprintf(fp, "HR RESUME SCREENING - FULL REPORT\n");
     fprintf(fp, "Total Candidates Processed: %d\n\n", candidateCount);

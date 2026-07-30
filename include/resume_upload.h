@@ -5,6 +5,5 @@
 
 int UploadResume(const char *filepath);
 int BulkUpload(const char *folderPath);
-int ScanDirectory(const char *folderPath);
 
 #endif

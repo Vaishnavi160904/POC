@@ -3,7 +3,6 @@
 
 #include "common.h"
 
-void SortCandidates(void);
 void RankCandidates(void);
 
 #endif

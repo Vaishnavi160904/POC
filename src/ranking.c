@@ -2,7 +2,8 @@
 
 /* Insertion sort by finalScore, descending. candidateCount is small enough
  * (resume counts in the tens/hundreds) that O(n^2) is perfectly fine here. */
-void SortCandidates(void)
+/* Only used internally by RankCandidates() - not part of the public module API. */
+static void SortCandidates(void)
 {
     for (int i = 1; i < candidateCount; i++) {
         Candidate key = candidates[i];

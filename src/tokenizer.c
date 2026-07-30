@@ -9,7 +9,7 @@ int Tokenize(const char *text, char tokens[][MAX_TOKEN_LEN], int maxTokens)
     strcpy(copy, text);
 
     int count = 0;
-    char *token = strtok(copy, " \t\r\n");
+    const char *token = strtok(copy, " \t\r\n");
     while (token != NULL && count < maxTokens) {
         strncpy(tokens[count], token, MAX_TOKEN_LEN - 1);
         tokens[count][MAX_TOKEN_LEN - 1] = '\0';

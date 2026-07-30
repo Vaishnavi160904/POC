@@ -52,7 +52,7 @@ int ExtractName(const char *text, char *outName)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *line = strtok(copy, "\n");
+    const char *line = strtok(copy, "\n");
     while (line != NULL) {
         char trimmed[MAX_LINE];
         strncpy(trimmed, line, sizeof(trimmed) - 1);
@@ -80,7 +80,7 @@ int ExtractEmail(const char *text, char *outEmail)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *token = strtok(copy, " \t\r\n");
+    const char *token = strtok(copy, " \t\r\n");
     while (token != NULL) {
         char *at = strchr(token, '@');
         if (at && strchr(at, '.')) {
@@ -111,7 +111,7 @@ int ExtractPhone(const char *text, char *outPhone)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *token = strtok(copy, " \t\r\n");
+    const char *token = strtok(copy, " \t\r\n");
     while (token != NULL) {
         char digitsOnly[30];
         int len = 0;
@@ -120,14 +120,17 @@ int ExtractPhone(const char *text, char *outPhone)
                 digitsOnly[len++] = token[i];
         digitsOnly[len] = '\0';
 
-        int digitCount = 0;
-        for (int i = 0; digitsOnly[i]; i++) if (isdigit((unsigned char)digitsOnly[i])) digitCount++;
-
-        if (digitCount >= 10 && digitCount <= 13) {
-            strncpy(outPhone, digitsOnly, 29);
-            outPhone[29] = '\0';
-            printf("[info_extractor] ExtractPhone: %s\n", outPhone);
-            return 1;
+        /* Validate the digits themselves (defensive check, not just a count)
+         * before accepting this token as a phone number. */
+        int digitStart = (digitsOnly[0] == '+') ? 1 : 0;
+        if (IsNumericToken(digitsOnly + digitStart)) {
+            int digitCount = (int)strlen(digitsOnly) - digitStart;
+            if (digitCount >= 10 && digitCount <= 13) {
+                strncpy(outPhone, digitsOnly, 29);
+                outPhone[29] = '\0';
+                printf("[info_extractor] ExtractPhone: %s\n", outPhone);
+                return 1;
+            }
         }
         token = strtok(NULL, " \t\r\n");
     }
@@ -159,7 +162,7 @@ int ExtractProjects(const char *text)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *line = strtok(copy, "\n");
+    const char *line = strtok(copy, "\n");
     int inSection = 0;
     while (line != NULL) {
         char trimmed[MAX_LINE];
@@ -201,7 +204,7 @@ int ExtractCertifications(const char *text)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *line = strtok(copy, "\n");
+    const char *line = strtok(copy, "\n");
     int inSection = 0;
     while (line != NULL) {
         char trimmed[MAX_LINE];
@@ -244,7 +247,7 @@ int ExtractEducation(const char *text)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *line = strtok(copy, "\n");
+    const char *line = strtok(copy, "\n");
     while (line != NULL) {
         char trimmed[MAX_LINE];
         strncpy(trimmed, line, sizeof(trimmed) - 1);
@@ -282,7 +285,7 @@ int ExtractExperience(const char *text)
     strncpy(copy, text, sizeof(copy) - 1);
     copy[sizeof(copy) - 1] = '\0';
 
-    char *token = strtok(copy, " \t\r\n");
+    const char *token = strtok(copy, " \t\r\n");
     char prevToken[MAX_WORD_LEN] = "";
     while (token != NULL) {
         if (StrCaseContains(token, "year")) {

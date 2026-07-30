@@ -1,5 +1,12 @@
 #include "utils.h"
 #include <ctype.h>
+#include <dirent.h>
+#ifdef _WIN32
+#include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#endif
 
 void TrimWhitespace(char *str)
 {
@@ -92,7 +99,7 @@ int LoadWordListFile(const char *filepath, char list[][MAX_WORD_LEN], int *count
  * space, and trims the ends. "Node.js" and "Node JS" both become "node js";
  * "C++" becomes "c" (symbols carry no letters to keep - handled as a special
  * case by the caller when needed) */
-void NormalizeForMatch(const char *in, char *out, size_t outSize)
+static void NormalizeForMatch(const char *in, char *out, size_t outSize)
 {
     size_t j = 0;
     int lastWasSpace = 1;
@@ -116,7 +123,7 @@ void NormalizeForMatch(const char *in, char *out, size_t outSize)
 /* normalizedPaddedText must already be NormalizeForMatch()'d and padded with
  * a leading/trailing space, e.g. " some normalized text ". Does a whole
  * word/phrase boundary-safe search. */
-int TextContainsPhrase(const char *normalizedPaddedText, const char *phrase)
+static int TextContainsPhrase(const char *normalizedPaddedText, const char *phrase)
 {
     char normPhrase[MAX_WORD_LEN];
     NormalizeForMatch(phrase, normPhrase, sizeof(normPhrase));
@@ -193,4 +200,28 @@ char *ConvertPdfToText(const char *pdfPath)
 
     printf("[utils] Converted PDF '%s' to text (%ld bytes)\n", pdfPath, size);
     return buffer;
+}
+
+/* Creates a single directory level if missing. Doesn't recursively create
+ * multi-level paths, but every path this project writes to (output/reports,
+ * output/shortlisted, etc.) already has its parent committed to the repo via
+ * .gitkeep, so this only needs to cover the final missing level in practice. */
+void EnsureDirectoryExists(const char *path)
+{
+    if (!path || !*path) return;
+
+    DIR *dir = opendir(path);
+    if (dir) {
+        closedir(dir);
+        return; /* already exists */
+    }
+
+#ifdef _WIN32
+    if (_mkdir(path) != 0) {
+#else
+    if (mkdir(path, 0755) != 0) {
+#endif
+        /* Not fatal - the caller's subsequent fopen() will fail cleanly and
+         * report the real problem if this directory truly can't be created. */
+    }
 }

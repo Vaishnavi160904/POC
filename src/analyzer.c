@@ -9,7 +9,7 @@ int LoadTechnicalSkills(const char *filepath)
 }
 
 /* Builds currentKeywords[] : a word -> frequency table for the tokens given. */
-int CountWordFrequency(char tokens[][MAX_TOKEN_LEN], int count)
+int CountWordFrequency(const char tokens[][MAX_TOKEN_LEN], int count)
 {
     currentKeywordCount = 0;
     for (int i = 0; i < count; i++) {

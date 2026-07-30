@@ -28,7 +28,8 @@ int UploadResume(const char *filepath)
     return 1;
 }
 
-int ScanDirectory(const char *folderPath)
+/* Only used internally by BulkUpload() - not part of the public module API. */
+static int ScanDirectory(const char *folderPath)
 {
     DIR *dir = opendir(folderPath);
     if (!dir) {
@@ -37,7 +38,7 @@ int ScanDirectory(const char *folderPath)
     }
 
     resumeFileCount = 0;
-    struct dirent *entry;
+    const struct dirent *entry;
     int duplicatesIgnored = 0;
 
     while ((entry = readdir(dir)) != NULL) {

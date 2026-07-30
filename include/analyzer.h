@@ -4,7 +4,7 @@
 #include "common.h"
 
 int    LoadTechnicalSkills(const char *filepath);
-int    CountWordFrequency(char tokens[][MAX_TOKEN_LEN], int count);
+int    CountWordFrequency(const char tokens[][MAX_TOKEN_LEN], int count);
 int    FindTopKeywords(int topN);
 double KeywordDensity(const char *keyword, int totalWords);
 void   DomainDetection(void);

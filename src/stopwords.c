@@ -8,7 +8,8 @@ int LoadStopWords(const char *filepath)
     return n;
 }
 
-int IsStopWord(const char *word)
+/* Only used internally by RemoveStopWords() - not part of the public module API. */
+static int IsStopWord(const char *word)
 {
     if (strlen(word) < 2) return 1; /* drop single characters too */
     for (int i = 0; i < stopWordCount; i++)
