@@ -14,19 +14,27 @@ HR Resume Screening System
 After logging in, you get the full HR menu:
 
 ```
- 1. Upload Job Requirement       6. Search Candidates
- 2. Bulk Upload Resumes          7. Generate Reports
- 3. Process Uploaded Resumes     8. View Analytics Dashboard
- 4. View Candidate Ranking       9. Change Password
- 5. Shortlist Top Candidates    10. Logout      0. Exit Program
+ 1. Job Requirement (upload/view/add/remove/delete)   6. Search Candidates
+ 2. Upload Resumes (bulk or single)                   7. Generate Reports
+ 3. Process Uploaded Resumes                          8. View Analytics Dashboard
+ 4. View Candidate Ranking                             9. Change Password
+ 5. Shortlist Top Candidates                          10. Logout      0. Exit Program
 ```
+
+Options 1, 2, and 6 open their own submenus:
+- **Job Requirement**: upload/load a file, view the current list, add/remove
+  a single skill, delete the requirement file, or reload from disk.
+- **Upload Resumes**: bulk-upload a whole folder, or upload one resume at a time.
+- **Search Candidates**: by name, skill, minimum experience, email, or degree.
 
 Every option maps to real module functions: upload a `.pdf`/`.txt`
 requirement (default `data/job_requirement.pdf`), bulk-upload a folder of
-resumes (default `data/resumes`, PDF and TXT mixed), process them (parses →
-tokenizes → analyzes → extracts info → matches skills → scores), then rank,
-shortlist, search, export CSV/TXT reports, and view the dashboard — all from
-the menu, on data you choose at runtime.
+resumes (default `data/resumes`, PDF and TXT mixed), process them following
+the documented pipeline (Resume Text Extraction → Text Cleaning →
+Tokenization → Stop Word Removal → Top Word Frequency Analysis → Skill
+Categorization → Skill Matching → Candidate Score Calculation → Candidate
+Ranking → Shortlisting → Report Generation) — all from the menu, on data you
+choose at runtime.
 
 It's been compiled and test-driven end-to-end here (zero warnings under
 `-Wpedantic`) with simulated input covering every menu option, including a
@@ -119,8 +127,8 @@ make
 
 You'll land on the main menu. A typical first run:
 1. **Login** with `hr_admin` / `password123` (auto-created on first run)
-2. **1** - Upload Job Requirement → press Enter to accept the default PDF
-3. **2** - Bulk Upload Resumes → press Enter to accept the default folder
+2. **1** → **1** - Job Requirement → Upload/Load → press Enter to accept the default PDF
+3. **2** → **1** - Upload Resumes → Bulk Upload → press Enter to accept the default folder
 4. **3** - Process Uploaded Resumes → runs the full pipeline on everything found
 5. **4** - View Candidate Ranking, **5** - Shortlist, **6** - Search, **7** - Reports, **8** - Dashboard
 6. **10** - Logout, or **0** - Exit
@@ -175,6 +183,31 @@ HR_Resume_Screening_System/
 - **Scoring weights**: `src/scoring.c` (currently Skill 50 + Projects 20 +
   Experience 15 + Education 10 + Certifications 5 = 100).
 - **How many candidates get shortlisted**: `SelectTopCandidates(2)` in `main.c`.
+
+## Code quality: running cppcheck / valgrind correctly
+
+If you run static analysis, pass the include path so cppcheck can actually
+resolve the project's own headers - otherwise every `#include "x.h"` shows
+up as a `missingInclude` note (that's not a real defect, just cppcheck not
+being told where to look):
+
+```
+cppcheck --enable=all --suppress=missingIncludeSystem -I include --error-exitcode=1 src/ main.c
+```
+
+For memory checking (Linux/WSL only - valgrind isn't available on native
+Windows), point it at the **compiled binary**, not the source folder:
+
+```
+gcc -Iinclude src/*.c main.c -g -o hr_resume_screener
+valgrind --leak-check=full --show-leak-kinds=all --log-file=valgrind_report.txt ./hr_resume_screener
+```
+
+The codebase has already been audited against both: the one real defect
+cppcheck can find (an unchecked `malloc()` before use) is fixed, the
+style-level suggestions (const-correctness, functions that should be
+`static`) are addressed, and every `malloc()`/`free()` pair has been traced
+by hand to confirm there's no leak path.
 
 ## Known limitations of the extraction heuristics
 
