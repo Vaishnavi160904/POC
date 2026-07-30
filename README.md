@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # HR Resume Screening System — Windows + VS Code Setup
 
 This is a **fully implemented, working system with a menu-driven console
@@ -234,3 +235,6 @@ layouts but isn't perfect on every format:
 | VS Code doesn't recognize `#include` / red squiggles everywhere | Fix `compilerPath` in `.vscode/c_cpp_properties.json` |
 | `Ctrl+Shift+B` says "no build task" | Make sure you opened the **folder** (not just a file) in VS Code |
 | `undefined reference to 'WinMain'` | You compiled without `main.c`, or `main.c`'s `main()` got renamed/removed |
+=======
+# POC
+>>>>>>> 32a86082c79e0c321798c911982079920aa08d40
